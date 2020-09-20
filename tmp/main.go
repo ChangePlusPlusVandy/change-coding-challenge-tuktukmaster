@@ -127,6 +127,13 @@ func main() {
 	var buildTweets []byte
 
 	buildTweets = <-grabTwoHundredTweets("elonmusk", "")
+	for i := 200; i < 3200; i += 200 {
+		var tempTweets []TweetData
+		_ = json.Unmarshal([]byte(buildTweets), &tempTweets)
+		//fmt.Println(tempTweets[0].ID_STR)
+		lastId := tempTweets[i-1].ID_STR
+		buildTweets = append(buildTweets, <-grabTwoHundredTweets("elonmusk", lastId)...)
+	}
 
 	_ = json.Unmarshal([]byte(buildTweets), &tweets)
 	fmt.Println(len(tweets))
