@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/big"
 	"net/http"
+	"regexp"
 )
 
 // UserData info
@@ -21,64 +22,6 @@ type TweetData struct {
 	User   UserData `json:user`
 }
 
-/*{
-"created_at":"Mon Aug 24 22:32:59 +0000 2020",
-"id":1298025540742524928,
-"id_str":"1298025540742524928",
-"text":"@Erdayastronaut Orbital launch mount",
-"truncated":false,
-"entities":{
-	"hashtags":[],
-	"symbols":[],
-	"user_mentions":[
-		{"screen_name":"Erdayastronaut",
-		"name":"Everyday Astronaut",
-		"id":3167257102,
-		"id_str":"3167257102",
-		"indices":[0,15]}
-		],
-		"urls":[]
-	},
-	"source":"\u003ca href=\"http:\/\/twitter.com\/download\/iphone\" rel=\"nofollow\"\u003eTwitter for iPhone\u003c\/a\u003e",
-	"in_reply_to_status_id":1298022728944029698,
-	"in_reply_to_status_id_str":"1298022728944029698",
-	"in_reply_to_user_id":3167257102,
-	"in_reply_to_user_id_str":"3167257102",
-	"in_reply_to_screen_name":"Erdayastronaut",
-	"user":{
-		"id":44196397,
-		"id_str":"44196397",
-		"name":"Elon Musk",
-		"screen_name":"elonmusk",
-		"location":"",
-		"description":"",
-		"url":null,
-		"entities":
-		{"description":{"urls":[]}},
-		"protected":false,
-		"followers_count":38788634,
-		"friends_count":97,
-		"listed_count":55991,
-		"created_at":"Tue Jun 02 20:12:29 +0000 2009",
-		"favourites_count":6658,
-		"utc_offset":null,
-		"time_zone":null,
-		"geo_enabled":false,
-		"verified":true,
-		"statuses_count":12319,
-		"lang":null,"contributors_enabled":false,"is_translator":false,"is_translation_enabled":false,"profile_background_color":"C0DEED","profile_background_image_url":"http:\/\/abs.twimg.com\/images\/themes\/theme1\/bg.png","profile_background_image_url_https":"https:\/\/abs.twimg.com\/images\/themes\/theme1\/bg.png","profile_background_tile":false,"profile_image_url":"http:\/\/pbs.twimg.com\/profile_images\/1295975423654977537\/dHw9JcrK_normal.jpg","profile_image_url_https":"https:\/\/pbs.twimg.com\/profile_images\/1295975423654977537\/dHw9JcrK_normal.jpg","profile_banner_url":"https:\/\/pbs.twimg.com\/profile_banners\/44196397\/1576183471","profile_link_color":"0084B4","profile_sidebar_border_color":"C0DEED","profile_sidebar_fill_color":"DDEEF6","profile_text_color":"333333","profile_use_background_image":true,"has_extended_profile":true,"default_profile":false,"default_profile_image":false,"following":null,"follow_request_sent":null,"notifications":null,"translator_type":"none"},
-		"geo":null,
-		"coordinates":null,
-		"place":null,
-		"contributors":null,
-		"is_quote_status":false,
-		"retweet_count":293,
-		"favorite_count":6192,
-		"favorited":false,
-		"retweeted":false,
-		"lang":"en"
-	}
-*/
 func grabTwoHundredTweets(name string, offsetStr string) <-chan []byte {
 	r := make(chan []byte)
 
@@ -121,23 +64,59 @@ func grabTwoHundredTweets(name string, offsetStr string) <-chan []byte {
 	return r
 }
 
-func main() {
+func filter(tweetArr []TweetData, test func(TweetData) bool) (ret []TweetData) {
+	for _, tweet := range tweetArr {
+		if test(tweet) {
+			ret = append(ret, tweet)
+		}
+	}
+	return
+}
 
-	var tweets []TweetData
-	var buildTweets []byte
+func DoesNotContainLinkOrTag(tweet TweetData) bool {
+	tag, _ := regexp.Compile("@\\S*")
+	link, _ := regexp.Compile("https:\\/\\/\\S*")
+	if tag.MatchString(tweet.Text) {
+		//fmt.Println("TAG: " + tweet.Text)
+		return false
+	}
+	if link.MatchString(tweet.Text) {
+		//fmt.Println("LINK: " + tweet.Text)
+		return false
+	}
+	return true
+}
 
-	buildTweets = <-grabTwoHundredTweets("elonmusk", "")
-	for i := 200; i < 3200; i += 200 {
+func grabTweets(name string) {
+	var offset string = ""
+	var allTweets = make([]TweetData, 3200)
+	for i := 0; i < 3200; i += 200 {
 		var tempTweets []TweetData
+		var buildTweets []byte
+
+		// Per twitter api, you can only grab a max of 200
+		buildTweets = <-grabTwoHundredTweets(name, offset)
+
+		// So load these 200 into the temp tweets array
 		_ = json.Unmarshal([]byte(buildTweets), &tempTweets)
-		//fmt.Println(tempTweets[0].ID_STR)
-		lastId := tempTweets[i-1].ID_STR
-		buildTweets = append(buildTweets, <-grabTwoHundredTweets("elonmusk", lastId)...)
+
+		// And copy them into the all tweets array that will be returned
+		copy(allTweets[i:i+200], tempTweets[:])
 	}
 
-	_ = json.Unmarshal([]byte(buildTweets), &tweets)
-	fmt.Println(len(tweets))
-	for i := 0; i < len(tweets); i++ {
-		//fmt.Println(tweets[i].ID_STR)
+	// Now you need to filter all of the tweets to not include retweets and images
+	// This could have mostly been done in the api call but that would vastly complicate
+	// creating a nice array so I decided to filter it here
+	filteredTweets := filter(allTweets, DoesNotContainLinkOrTag)
+
+	for i := 0; i < len(filteredTweets); i++ {
+		//fmt.Println(filteredTweets[i].Text)
 	}
+	fmt.Println(len(filteredTweets))
+}
+
+func main() {
+	grabTweets("elonmusk")
+	grabTweets("kanyewest")
+	grabTweets("realDonaldTrump")
 }
