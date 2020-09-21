@@ -1,1 +1,5 @@
+# Back\ End/secrets.json would generally be included in the .gitignore (and the bearer would
+# never make it into git) but I figured it might be a bit easier for you to run this without
+# worrying about that 
+
 Front\ End/node_modules/

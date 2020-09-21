@@ -5,122 +5,19 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math/big"
 	"net/http"
-	"regexp"
+
+	"./tweets"
 
 	"github.com/gorilla/mux"
 )
 
-// UserData info
-type UserData struct {
-	Name string `json:name`
+type confJSON struct {
+	Port string `json:port`
 }
 
-type TweetData struct {
-	ID_STR string   `json:id_str`
-	Text   string   `json:text`
-	User   UserData `json:user`
-}
-
-/*
- * grabTwoHundredTweets
- *  - name: twitter handle to grab from
- *  - offsetStr: last retrieved tweet ID
- */
-func grabTwoHundredTweets(name string, offsetStr string) <-chan []byte {
-	r := make(chan []byte)
-
-	go func() {
-		defer close(r)
-		url := "https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name=" + name + "&count=200"
-
-		if offsetStr != "" {
-			// max_id is inclusive so you need to add 1 to grab 200 new tweets
-			offsetID := new(big.Int)
-			offsetID.SetString(offsetStr, 10)
-			offsetID.Add(offsetID, big.NewInt(1))
-			url += "&max_id=" + offsetID.String()
-		}
-
-		// Create a Bearer string by appending string access token
-		var bearer = "Bearer " + "AAAAAAAAAAAAAAAAAAAAADlOHwEAAAAAr9Ncm6oJ8hhQ5U18GafR9ORycH4%3DDfgEkAO74v0YRMLdEbm5LkmhADayzqN26PkUTcf70A5A1v5D56"
-
-		// Create a new request using http
-		req, err := http.NewRequest("GET", url, nil)
-
-		// add authorization header to the req
-		req.Header.Add("Authorization", bearer)
-
-		// Send req using http Client
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err != nil {
-			log.Println("Error on response.\n[ERRO] -", err)
-		}
-		//log.Println(resp.Body)
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatalln("Error while reading body")
-		}
-
-		r <- []byte(body)
-	}()
-
-	return r
-}
-
-/*
- * filter
- *
- */
-func filter(tweetArr []TweetData, test func(TweetData) bool) (ret []TweetData) {
-	for _, tweet := range tweetArr {
-		if test(tweet) {
-			ret = append(ret, tweet)
-		}
-	}
-	return
-}
-
-func doesNotContainLinkOrTag(tweet TweetData) bool {
-	tag, _ := regexp.Compile("@\\S*")
-	link, _ := regexp.Compile("https:\\/\\/\\S*")
-	if tag.MatchString(tweet.Text) {
-		//fmt.Println("TAG: " + tweet.Text)
-		return false
-	}
-	if link.MatchString(tweet.Text) {
-		//fmt.Println("LINK: " + tweet.Text)
-		return false
-	}
-	return true
-}
-
-func grabTweets(name string) []TweetData {
-	var offset string = ""
-	var allTweets = make([]TweetData, 3200)
-	for i := 0; i < 3200; i += 200 {
-		var tempTweets []TweetData
-		var buildTweets []byte
-
-		// Per twitter api, you can only grab a max of 200
-		buildTweets = <-grabTwoHundredTweets(name, offset)
-
-		// So load these 200 into the temp tweets array
-		_ = json.Unmarshal([]byte(buildTweets), &tempTweets)
-
-		// And copy them into the all tweets array that will be returned
-		copy(allTweets[i:i+200], tempTweets[:])
-	}
-
-	// Now you need to filter all of the tweets to not include retweets and images
-	// This could have mostly been done in the api call but that would vastly complicate
-	// creating a nice array so I decided to filter it here
-	filteredTweets := filter(allTweets, doesNotContainLinkOrTag)
-
-	// Return the tweets bc this function only grabs tweets
-	return filteredTweets
+type secretsJSON struct {
+	Bearer string `string:bearer`
 }
 
 func homePage(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +31,7 @@ func returnTweetFromHandle(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["handle"]
 
-	tweets := grabTweets(key)
+	tweets := tweets.GrabTweets(key)
 
 	for i := 0; i < len(tweets); i++ {
 		printableTweet, _ := json.Marshal(tweets[i])
@@ -142,16 +39,25 @@ func returnTweetFromHandle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func handleRequests() {
-	fmt.Println("Hosting backend on port 3000")
+func handleRequests(port string, bearer string) {
+	fmt.Println("Hosting backend on port " + string(port))
 
 	myRouter := mux.NewRouter().StrictSlash(true)
 	myRouter.HandleFunc("/", homePage)
 	myRouter.HandleFunc("/get-tweets/{handle}", returnTweetFromHandle)
 
-	log.Fatal(http.ListenAndServe(":3000", myRouter))
+	log.Fatal(http.ListenAndServe(":"+port, myRouter))
 }
 
 func main() {
-	handleRequests()
+	confFile, _ := ioutil.ReadFile("./conf.json")
+	secretsFile, _ := ioutil.ReadFile("./secrets.json")
+
+	conf := confJSON{}
+	secrets := secretsJSON{}
+
+	_ = json.Unmarshal(confFile, &conf)
+	_ = json.Unmarshal(secretsFile, &secrets)
+
+	handleRequests(conf.Port, secrets.Bearer)
 }
