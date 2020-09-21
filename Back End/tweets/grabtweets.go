@@ -83,12 +83,17 @@ func filter(tweetArr []TweetData, test func(TweetData) bool) (ret []TweetData) {
 func doesNotContainLinkOrTag(tweet TweetData) bool {
 	tag, _ := regexp.Compile("@\\S*")
 	link, _ := regexp.Compile("https:\\/\\/\\S*")
+	hasNonWhitespace, _ := regexp.Compile("\\S*")
 	if tag.MatchString(tweet.Text) {
 		//fmt.Println("TAG: " + tweet.Text)
 		return false
 	}
 	if link.MatchString(tweet.Text) {
 		//fmt.Println("LINK: " + tweet.Text)
+		return false
+	}
+	if !hasNonWhitespace.MatchString(tweet.Text) {
+		//fmt.Println("EMPTY: " + tweet.Text)
 		return false
 	}
 	return true
