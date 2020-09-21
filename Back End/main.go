@@ -8,12 +8,13 @@ import (
 	"math/big"
 	"net/http"
 	"regexp"
+
+	"github.com/gorilla/mux"
 )
 
 // UserData info
 type UserData struct {
-	ScreenName string `json:screen_name`
-	Name       string `json:name`
+	Name string `json:name`
 }
 
 type TweetData struct {
@@ -22,6 +23,11 @@ type TweetData struct {
 	User   UserData `json:user`
 }
 
+/*
+ * grabTwoHundredTweets
+ *  - name: twitter handle to grab from
+ *  - offsetStr: last retrieved tweet ID
+ */
 func grabTwoHundredTweets(name string, offsetStr string) <-chan []byte {
 	r := make(chan []byte)
 
@@ -64,6 +70,10 @@ func grabTwoHundredTweets(name string, offsetStr string) <-chan []byte {
 	return r
 }
 
+/*
+ * filter
+ *
+ */
 func filter(tweetArr []TweetData, test func(TweetData) bool) (ret []TweetData) {
 	for _, tweet := range tweetArr {
 		if test(tweet) {
@@ -73,7 +83,7 @@ func filter(tweetArr []TweetData, test func(TweetData) bool) (ret []TweetData) {
 	return
 }
 
-func DoesNotContainLinkOrTag(tweet TweetData) bool {
+func doesNotContainLinkOrTag(tweet TweetData) bool {
 	tag, _ := regexp.Compile("@\\S*")
 	link, _ := regexp.Compile("https:\\/\\/\\S*")
 	if tag.MatchString(tweet.Text) {
@@ -87,7 +97,7 @@ func DoesNotContainLinkOrTag(tweet TweetData) bool {
 	return true
 }
 
-func grabTweets(name string) {
+func grabTweets(name string) []TweetData {
 	var offset string = ""
 	var allTweets = make([]TweetData, 3200)
 	for i := 0; i < 3200; i += 200 {
@@ -107,16 +117,41 @@ func grabTweets(name string) {
 	// Now you need to filter all of the tweets to not include retweets and images
 	// This could have mostly been done in the api call but that would vastly complicate
 	// creating a nice array so I decided to filter it here
-	filteredTweets := filter(allTweets, DoesNotContainLinkOrTag)
+	filteredTweets := filter(allTweets, doesNotContainLinkOrTag)
 
-	for i := 0; i < len(filteredTweets); i++ {
-		//fmt.Println(filteredTweets[i].Text)
+	// Return the tweets bc this function only grabs tweets
+	return filteredTweets
+}
+
+func homePage(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Welcome to the HomePage!")
+	fmt.Println("Endpoint Hit: homePage")
+}
+
+func returnTweetFromHandle(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Endpoint Hit: grab tweet page")
+
+	vars := mux.Vars(r)
+	key := vars["handle"]
+
+	tweets := grabTweets(key)
+
+	for i := 0; i < len(tweets); i++ {
+		printableTweet, _ := json.Marshal(tweets[i])
+		fmt.Fprintf(w, string(printableTweet))
 	}
-	fmt.Println(len(filteredTweets))
+}
+
+func handleRequests() {
+	fmt.Println("Hosting backend on port 3000")
+
+	myRouter := mux.NewRouter().StrictSlash(true)
+	myRouter.HandleFunc("/", homePage)
+	myRouter.HandleFunc("/get-tweets/{handle}", returnTweetFromHandle)
+
+	log.Fatal(http.ListenAndServe(":3000", myRouter))
 }
 
 func main() {
-	grabTweets("elonmusk")
-	grabTweets("kanyewest")
-	grabTweets("realDonaldTrump")
+	handleRequests()
 }
