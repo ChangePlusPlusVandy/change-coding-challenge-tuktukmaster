@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import StartBtn from './../StartBtn/StartBtn';
 import TwitterHandleInput from './../TwitterHandleInput/TwitterHandleInput';
+import Loading from './../Loading/Loading'
 import Menu from './../Menu/Menu'
 
 class Game extends Component {
@@ -35,11 +36,15 @@ class Game extends Component {
   }
 
   render(){
-    return (
-      <div>
-        <Menu
+    /*
+<Menu
           startGameCallback = {this.startGame}
         />
+    */
+    return (
+      <div>
+        <Loading/>
+        
       </div>
     );
   }

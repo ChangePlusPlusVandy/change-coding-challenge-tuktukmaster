@@ -3,8 +3,8 @@ import './GuessBtn.scss';
 
 class GuessBtn extends Component {
 
-  construct(props){
-    console.log(props);
+  constructor(props){
+
   }
 
   handleClick = (e) => {
