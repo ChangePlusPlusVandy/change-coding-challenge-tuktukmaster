@@ -7,10 +7,36 @@ class Loading extends Component {
     super(props)
     this.state = {
       twitterHandleOne: this.props.twitterHandleOne,
+      tweetsOne: {},
+      twitterNameOne: "",
       twitterHandleTwo: this.props.twitterHandleTwo,
-      setTwitterName: this.props.setTwitterNames,
-      setTweets: this.props.setTweets
+      tweetsTwo: {},
+      twitterNameTwo: "",
+      setTwitterData: this.props.setTwitterData
     }
+  }
+
+  async componentDidMount() {
+    await fetch('http://localhost:3001/get-tweets/'+this.state.twitterHandleOne)
+    .then(res => res.json())
+    .then((data) => {
+      this.setState({ tweetsOne: data, twitterNameOne: data[0].User.Name })
+    })
+    .catch(console.log)
+
+    await fetch('http://localhost:3001/get-tweets/'+this.state.twitterHandleTwo)
+    .then(res => res.json())
+    .then((data) => {
+      this.setState({ tweetsTwo: data, twitterNameTwo: data[0].User.Name })
+    })
+    .catch(console.log)
+
+    this.state.setTwitterData(
+      this.state.twitterNameOne,
+      this.state.tweetsOne,
+      this.state.twitterNameTwo,
+      this.state.tweetsTwo
+    )
   }
 
   

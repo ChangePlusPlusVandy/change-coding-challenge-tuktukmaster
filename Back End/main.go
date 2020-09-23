@@ -28,15 +28,28 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 func returnTweetFromHandle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Endpoint Hit: grab tweet page")
 
+	enableCors(&w)
+
 	vars := mux.Vars(r)
 	key := vars["handle"]
 
+	fmt.Println("Handle: " + key)
+
 	tweets := tweets.GrabTweets(key)
 
+	fmt.Fprintf(w, "[")
 	for i := 0; i < len(tweets); i++ {
 		printableTweet, _ := json.Marshal(tweets[i])
 		fmt.Fprintf(w, string(printableTweet))
+		if i != len(tweets)-1 {
+			fmt.Fprintf(w, ",")
+		}
 	}
+	fmt.Fprintf(w, "]")
+}
+
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 }
 
 func handleRequests(port string, bearer string) {
@@ -44,7 +57,7 @@ func handleRequests(port string, bearer string) {
 
 	myRouter := mux.NewRouter().StrictSlash(true)
 	myRouter.HandleFunc("/", homePage)
-	myRouter.HandleFunc("/get-tweets/{handle}", returnTweetFromHandle)
+	myRouter.HandleFunc("/get-tweets/{handle}", returnTweetFromHandle).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":"+port, myRouter))
 }

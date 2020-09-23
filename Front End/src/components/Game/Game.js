@@ -1,14 +1,14 @@
 import React, { Component } from 'react';
-import StartBtn from './../StartBtn/StartBtn';
-import TwitterHandleInput from './../TwitterHandleInput/TwitterHandleInput';
 import Loading from './../Loading/Loading'
 import Menu from './../Menu/Menu'
+import GamePlay from './../GamePlay/GamePlay'
 
 class Game extends Component {
 
   constructor(props){
     super(props)
     this.state = {
+      gameState: "start",
       twitterHandleOne: "",
       nameOne: "",
       tweetsOne: {},
@@ -19,6 +19,7 @@ class Game extends Component {
       totalCount: 0
     }
     this.startGame = this.startGame.bind(this);
+    this.setTwitterData = this.setTwitterData.bind(this);
   }
 
   setHandleOne = (childData) => {
@@ -31,40 +32,72 @@ class Game extends Component {
     console.log(childData)
   }
 
+  setTwitterData = (nameOne, tweetsOne, nameTwo, tweetsTwo) => {
+    this.setState({
+      gameState: "gameplay",
+      nameOne: nameOne,
+      tweetsOne: tweetsOne,
+      nameTwo: nameTwo,
+      tweetsTwo: tweetsTwo
+    })
+  }
+
   startGame = (handleOne, handleTwo) => {
-    console.log(handleOne,handleTwo);
+    this.setState({
+      gameState: "loading",
+      twitterHandleOne: handleOne,
+      twitterHandleTwo: handleTwo
+    })
   }
 
   render(){
-    /*
-<Menu
-          startGameCallback = {this.startGame}
+      if(this.state.gameState === "start"){
+        return (
+          <div>
+            <Menu
+              startGameCallback = {this.startGame}
+            />
+          </div>
+        )
+      } else if(this.state.gameState === "loading"){
+        return (
+          <div>
+        <Loading
+          twitterHandleOne = {this.state.twitterHandleOne}
+          twitterHandleTwo = {this.state.twitterHandleTwo}
+          setTwitterData = {this.setTwitterData}
         />
-    */
-    return (
-      <div>
-        <Loading/>
         
       </div>
-    );
+        )
+      } else if(this.state.gameState === "gameplay"){
+        const chooseHandle = (Math.floor(Math.random() * 2) === 0)
+        let correct;
+        let index;
+        let tweet;
+        if(chooseHandle){
+          correct = "0"
+          index = Math.floor(Math.random() * this.state.tweetsOne.length)
+          tweet = this.state.tweetsOne[index]
+        }else{
+          correct = "1"
+          index = Math.floor(Math.random() * this.state.tweetsTwo.length)
+          tweet = this.state.tweetsTwo[index]
+        }
+        return (
+          <div>
+            <GamePlay
+              nameOne = {this.state.nameOne}
+              nameTwo = {this.state.nameTwo}
+              correct = {correct}
+              tweet = {tweet}
+            />
+          </div>
+        )
+      }
+    
   }
   
 }
-/*
-<h1>Do You Know Your Meme-Lords?</h1>
-          <p>
-            Lorem ipsum dolar sit amet
-          </p>
-          <div className="Button-container">
-            <GuessBtn
-              name = "Elon Musk"
-              className = "button success"
-            />
-            <GuessBtn
-              name = "Kanye West"
-              className = "button error"
-            />
-          </div>
-*/
 
 export default Game;

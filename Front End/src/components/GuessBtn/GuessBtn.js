@@ -3,10 +3,6 @@ import './GuessBtn.scss';
 
 class GuessBtn extends Component {
 
-  constructor(props){
-
-  }
-
   handleClick = (e) => {
     e.preventDefault();
       //reset animation
@@ -19,7 +15,7 @@ class GuessBtn extends Component {
 
   render(){
     return (
-      <div>
+      <div className="guessBtn">
         <button className={this.props.className} onClick={this.handleClick}>{this.props.name}</button>
       </div>
     );
