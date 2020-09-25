@@ -31,6 +31,10 @@ class Loading extends Component {
     })
     .catch(console.log)
 
+    if(this.state.tweetsOne.length === 0 || this.state.tweetsTwo.length === 0){
+      
+    }
+
     this.state.setTwitterData(
       this.state.twitterNameOne,
       this.state.tweetsOne,

@@ -41,6 +41,7 @@ func grabTwoHundredTweets(name string, offsetStr string) <-chan []byte {
 		}
 
 		// Create a Bearer string by appending string access token
+		// Generally the key would be in a separate json file and would be kept secret but for simplicity I did not do that
 		var bearer = "Bearer " + "AAAAAAAAAAAAAAAAAAAAADlOHwEAAAAAr9Ncm6oJ8hhQ5U18GafR9ORycH4%3DDfgEkAO74v0YRMLdEbm5LkmhADayzqN26PkUTcf70A5A1v5D56"
 
 		// Create a new request using http
@@ -69,7 +70,9 @@ func grabTwoHundredTweets(name string, offsetStr string) <-chan []byte {
 
 /*
  * filter
- *
+ *  - tweetArr: the array of tweets to filter
+ *  - test:			the function to test the tweets with
+ * returns filtered tweets
  */
 func filter(tweetArr []TweetData, test func(TweetData) bool) (ret []TweetData) {
 	for _, tweet := range tweetArr {
@@ -80,10 +83,14 @@ func filter(tweetArr []TweetData, test func(TweetData) bool) (ret []TweetData) {
 	return
 }
 
+/*
+ * doesNotContainLinkOrTag
+ *  - tweet: the TweetData that will be analyzed
+ * returns if the tweet should be filtered out
+ */
 func doesNotContainLinkOrTag(tweet TweetData) bool {
 	tag, _ := regexp.Compile("@\\S*")
 	link, _ := regexp.Compile("https:\\/\\/\\S*")
-	hasNonWhitespace, _ := regexp.Compile("\\S*")
 	if tag.MatchString(tweet.Text) {
 		//fmt.Println("TAG: " + tweet.Text)
 		return false
@@ -92,13 +99,14 @@ func doesNotContainLinkOrTag(tweet TweetData) bool {
 		//fmt.Println("LINK: " + tweet.Text)
 		return false
 	}
-	if !hasNonWhitespace.MatchString(tweet.Text) {
-		//fmt.Println("EMPTY: " + tweet.Text)
-		return false
-	}
 	return true
 }
 
+/*
+ * GrabTweets
+ *  - name: the twitter handle to grab tweets for
+ * returns latest tweets from the user
+ */
 func GrabTweets(name string) []TweetData {
 	var offset string = ""
 	var allTweets = make([]TweetData, 3200)

@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import Loading from './../Loading/Loading'
 import Menu from './../Menu/Menu'
 import GamePlay from './../GamePlay/GamePlay'
+import RoundEnd from '../RoundEnd/RoundEnd';
 
 class Game extends Component {
 
@@ -16,22 +17,15 @@ class Game extends Component {
       nameTwo: "",
       tweetsTwo: {},
       correctCount: 0,
-      totalCount: 0
+      playedRounds: 0,
+      totalRounds: 5
     }
     this.startGame = this.startGame.bind(this);
     this.setTwitterData = this.setTwitterData.bind(this);
+    this.countAnswer = this.countAnswer.bind(this);
   }
 
-  setHandleOne = (childData) => {
-    this.setState({twitterHandleOne: childData})
-    console.log(childData)
-  }
-
-  setHandleTwo = (childData) => {
-    this.setState({twitterHandleTwo: childData})
-    console.log(childData)
-  }
-
+  // callback function passed into the loading screen that allows tweets to be loaded
   setTwitterData = (nameOne, tweetsOne, nameTwo, tweetsTwo) => {
     this.setState({
       gameState: "gameplay",
@@ -42,12 +36,29 @@ class Game extends Component {
     })
   }
 
+  // callback function passed into menu that initializes the game data
   startGame = (handleOne, handleTwo) => {
     this.setState({
       gameState: "loading",
       twitterHandleOne: handleOne,
-      twitterHandleTwo: handleTwo
+      twitterHandleTwo: handleTwo,
+      correctCount: 0,
+      playedRounds: 0
     })
+  }
+
+  // callback function passed into gameplay that handles answering a question
+  countAnswer = (correct) => {
+    var self = this
+    setTimeout(function () {
+      const numCorrect = self.state.correctCount
+      const numRound = self.state.playedRounds
+      self.setState({
+        correctCount: numCorrect + correct,
+        playedRounds: numRound + 1,
+        gameState: "round end"
+      })
+    }, 5000);
   }
 
   render(){
@@ -71,10 +82,11 @@ class Game extends Component {
       </div>
         )
       } else if(this.state.gameState === "gameplay"){
+        // flip a coin to choose which user to pick
         const chooseHandle = (Math.floor(Math.random() * 2) === 0)
-        let correct;
-        let index;
-        let tweet;
+        
+        // pick a random tweet
+        let correct, index, tweet;
         if(chooseHandle){
           correct = "0"
           index = Math.floor(Math.random() * this.state.tweetsOne.length)
@@ -91,6 +103,22 @@ class Game extends Component {
               nameTwo = {this.state.nameTwo}
               correct = {correct}
               tweet = {tweet}
+              callback = {this.countAnswer}
+            />
+          </div>
+        )
+      } else if(this.state.gameState === "round end"){
+        return (
+          <div>
+            <RoundEnd
+              correctCount = {this.state.correctCount}
+              playedRounds = {this.state.playedRounds}
+              totalRounds = {this.state.totalRounds}
+              callback = {() => {
+                this.setState({
+                  gameState: this.state.playedRounds < this.state.totalRounds ? "gameplay" : "start" 
+                })
+              }}
             />
           </div>
         )

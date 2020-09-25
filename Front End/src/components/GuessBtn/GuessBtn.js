@@ -4,6 +4,8 @@ import './GuessBtn.scss';
 class GuessBtn extends Component {
 
   handleClick = (e) => {
+    this.props.callback(this.props.className === "button success")
+
     e.preventDefault();
       //reset animation
       e.target.classList.remove('animate');
@@ -16,7 +18,7 @@ class GuessBtn extends Component {
   render(){
     return (
       <div className="guessBtn">
-        <button className={this.props.className} onClick={this.handleClick}>{this.props.name}</button>
+        <button className={this.props.className} onClick={this.handleClick} disabled = {this.props.disabled}>{this.props.name}</button>
       </div>
     );
   }

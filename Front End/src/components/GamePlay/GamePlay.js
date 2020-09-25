@@ -11,15 +11,21 @@ class GamePlay extends Component {
       nameOne: this.props.nameOne,
       nameTwo: this.props.nameTwo,
       correct: this.props.correct,
-      tweet: this.props.tweet
+      tweet: this.props.tweet,
+      callback: this.props.callback,
+      disableBtn: false
     }
 
     this.handleClick = this.handleClick.bind(this);
-    
   }
 
-  handleClick() {
-    this.state.startCallback();
+  // callback function passed into GuessBtns 
+  handleClick(correct) {
+    // this prevents a user from using multiple answers
+    this.setState({
+      disableBtn:true
+    })
+    this.state.callback(correct);
   }
 
   render(){
@@ -33,10 +39,14 @@ class GamePlay extends Component {
               <GuessBtn
                 name = {this.state.nameOne}
                 className = {this.state.correct === "0" ? "button success" : "button error"}
+                callback = {this.handleClick}
+                disabled = {this.state.disableBtn}
               />
               <GuessBtn
                 name = {this.state.nameTwo}
                 className = {this.state.correct === "1" ? "button success" : "button error"}
+                callback = {this.handleClick}
+                disabled = {this.state.disableBtn}
               />
             </div>
       </div>

@@ -13,14 +13,17 @@ class Menu extends Component {
     }
   }
 
+  // callback function allowing inputs to set state
   setHandleOne = (childData) => {
     this.setState({twitterHandleOne: childData})
   }
 
+  // callback function allowing inputs to set state
   setHandleTwo = (childData) => {
     this.setState({twitterHandleTwo: childData})
   }
 
+  // callback function passing state values up to Game to actually start the game
   startGame = () => {
     this.state.startGame(this.state.twitterHandleOne,this.state.twitterHandleTwo)
   }
@@ -40,26 +43,11 @@ class Menu extends Component {
         <StartBtn
           parentCallback = {this.startGame}
         />
+        <p>Try these for the meme: AnnaKendrick47, owlcity, Kanyewest, cher, elonmusk</p>
       </div>
     );
   }
   
 }
-/*
-<h1>Do You Know Your Meme-Lords?</h1>
-          <p>
-            Lorem ipsum dolar sit amet
-          </p>
-          <div className="Button-container">
-            <GuessBtn
-              name = "Elon Musk"
-              className = "button success"
-            />
-            <GuessBtn
-              name = "Kanye West"
-              className = "button error"
-            />
-          </div>
-*/
 
 export default Menu;
